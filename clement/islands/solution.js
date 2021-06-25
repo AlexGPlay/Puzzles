@@ -6,72 +6,43 @@
  */
 function removeIslands(matrix) {
   const newMatrix = [];
-  let islands = {};
+  for (let i = 0; i < matrix.length; i++) newMatrix.push(new Array(matrix[0].length).fill(0));
 
-  const externalPositions = getExternalOnes(matrix);
-  externalPositions.forEach((position) => {
-    if (!islands[position[0]]?.[position[1]]) {
-      const newIsland = getIsland(matrix, position);
-      Object.keys(newIsland).forEach(
-        (key) => (islands[key] = { ...islands[key], ...newIsland[key] })
-      );
-    }
-  });
+  matrix[0].forEach(
+    // Top
+    (value, idx) =>
+      value === 1 && newMatrix[0][idx] === 0 && fillIsland(matrix, [0, idx], newMatrix)
+  );
+  matrix[matrix.length - 1].forEach(
+    // Bottom
+    (value, idx) =>
+      value === 1 &&
+      newMatrix[matrix.length - 1][idx] === 0 &&
+      fillIsland(matrix, [matrix.length - 1, idx], newMatrix)
+  );
 
-  for (let i = 0; i < matrix.length; i++) {
-    newMatrix[i] = new Array(matrix[i].length).fill(0);
-    if (islands[i]) Object.keys(islands[i]).forEach((j) => (newMatrix[i][j] = 1));
+  for (let i = 1; i < matrix.length - 1; i++) {
+    matrix[i][0] === 1 && newMatrix[i][0] === 0 && fillIsland(matrix, [i, 0], newMatrix); // Left
+    matrix[i][matrix.length - 1] === 1 &&
+      newMatrix[i][matrix.length - 1] === 0 &&
+      fillIsland(matrix, [i, matrix.length - 1], newMatrix); // Right
   }
 
   return newMatrix;
 }
 
-/**
- * Returns the ones from the external area.
- *
- * @param {number[][]} matrix Matrix that consists of 1 and 0.
- * @returns {number[][]} External positions that have ones.
- */
-function getExternalOnes(matrix) {
-  const positions = [];
-
-  matrix[0].forEach((value, idx) => value === 1 && positions.push([0, idx])); // Top
-  matrix[matrix.length - 1].forEach(
-    (value, idx) => value === 1 && positions.push([matrix.length - 1, idx])
-  ); // Bottom
-
-  for (let i = 1; i < matrix.length - 1; i++) {
-    matrix[i][0] === 1 && positions.push([i, 0]); // Left
-    matrix[i][matrix.length - 1] === 1 && positions.push([i, matrix.length - 1]); // Right
-  }
-
-  return positions;
-}
-
-/**
- * Returns an object that contains all the positions from the island starting on the first element.
- *
- * @param {number[][]} matrix Matrix that consists of 1 and 0.
- * @param {number[]} position i and j coords from a one.
- * @param {Object} island Object that contains all the positions from the island
- *
- */
-function getIsland(matrix, position, island = {}) {
+function fillIsland(matrix, position, newMatrix) {
   const [i, j] = position;
 
-  if (i < 0 || i >= matrix.length) return island;
-  if (j < 0 || j >= matrix[0].length) return island;
-  if (matrix[i][j] === 0) return island;
+  if (i < 0 || i >= matrix.length) return;
+  if (j < 0 || j >= matrix[0].length) return;
+  if (matrix[i][j] === 0) return;
 
-  if (!island[i]) island[i] = {};
-
-  island[i][j] = true;
-  if (!island[i + 1]?.[j]) island = getIsland(matrix, [i + 1, j], island);
-  if (!island[i - 1]?.[j]) island = getIsland(matrix, [i - 1, j], island);
-  if (!island[i]?.[j + 1]) island = getIsland(matrix, [i, j + 1], island);
-  if (!island[i]?.[j - 1]) island = getIsland(matrix, [i, j - 1], island);
-
-  return island;
+  newMatrix[i][j] = 1;
+  if (newMatrix[i + 1]?.[j] === 0) fillIsland(matrix, [i + 1, j], newMatrix);
+  if (newMatrix[i - 1]?.[j] === 0) fillIsland(matrix, [i - 1, j], newMatrix);
+  if (newMatrix[i]?.[j + 1] === 0) fillIsland(matrix, [i, j + 1], newMatrix);
+  if (newMatrix[i]?.[j - 1] === 0) fillIsland(matrix, [i, j - 1], newMatrix);
 }
 
 //
