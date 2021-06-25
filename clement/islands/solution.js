@@ -19,12 +19,8 @@ function removeIslands(matrix) {
   });
 
   for (let i = 0; i < matrix.length; i++) {
-    newMatrix[i] = [];
-    for (let j = 0; j < matrix[0].length; j++) {
-      const value = matrix[i][j];
-      if (value === 1 && islands[i]?.[j]) newMatrix[i][j] = 1;
-      else newMatrix[i][j] = 0;
-    }
+    newMatrix[i] = new Array(matrix[i].length).fill(0);
+    if (islands[i]) Object.keys(islands[i]).forEach((j) => (newMatrix[i][j] = 1));
   }
 
   return newMatrix;
