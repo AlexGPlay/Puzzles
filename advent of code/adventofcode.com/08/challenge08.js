@@ -52,20 +52,22 @@ const differentDigitCount = {
   [neededSegments[8]]: 8,
 };
 
-const mapFromKnownNumbers = (knownValues) => {
+const unknownDigitsOrder = [2, 3, 5, 6, 9, 0];
+
+const defaultCandidatures = {
+  a: [1, 2, 3, 4, 5, 6, 7],
+  b: [1, 2, 3, 4, 5, 6, 7],
+  c: [1, 2, 3, 4, 5, 6, 7],
+  d: [1, 2, 3, 4, 5, 6, 7],
+  e: [1, 2, 3, 4, 5, 6, 7],
+  f: [1, 2, 3, 4, 5, 6, 7],
+  g: [1, 2, 3, 4, 5, 6, 7],
+};
+
+const mapFromKnownNumbers = (knownValues, candidatures = defaultCandidatures) => {
   const orderedKnownNumbers = Object.keys(knownValues).sort(
     (a, b) => numberRepresentation[a].length - numberRepresentation[b].length
   );
-
-  const candidatures = {
-    a: [1, 2, 3, 4, 5, 6, 7],
-    b: [1, 2, 3, 4, 5, 6, 7],
-    c: [1, 2, 3, 4, 5, 6, 7],
-    d: [1, 2, 3, 4, 5, 6, 7],
-    e: [1, 2, 3, 4, 5, 6, 7],
-    f: [1, 2, 3, 4, 5, 6, 7],
-    g: [1, 2, 3, 4, 5, 6, 7],
-  };
 
   for (let knownNumber of orderedKnownNumbers) {
     const numberSegments = numberRepresentation[knownNumber];
@@ -106,10 +108,30 @@ const tryGuess = (currentCandidatures, wires, number) => {
       return true;
     });
 
-  console.log("");
+  for (let combination of possibleCombinations) {
+    const candidature = {};
+    Object.entries(currentCandidatures).forEach(([wire, candidatureWire]) => {
+      candidature[wire] = [...candidatureWire];
+    });
+
+    const testedCandidature = mapFromKnownNumbers({ [number]: combination }, candidature);
+    if (Object.values(testedCandidature).every((array) => array.filter(Boolean).length === 1))
+      return testedCandidature;
+
+    if (Object.values(testedCandidature).some((array) => array.filter(Boolean).length === 0))
+      continue;
+
+    const nextValue = unknownDigitsOrder.findIndex((digit) => digit === number) + 1;
+    if (!unknownDigitsOrder[nextValue]) return null;
+
+    const guess = tryGuess(testedCandidature, wires, unknownDigitsOrder[nextValue]);
+    if (Object.values(guess).every((array) => array.filter(Boolean).length === 1)) return guess;
+  }
+
+  return null;
 };
 
-lines.forEach(({ wires, output }) => {
+const mappedOutputs = lines.map(({ wires, output }) => {
   const knownMappedData = wires.reduce((acc, line) => {
     const number = differentDigitCount[line.length];
     if (!number || acc[number]) return acc;
@@ -118,10 +140,32 @@ lines.forEach(({ wires, output }) => {
   }, {});
 
   const candidaturesFromKnownData = mapFromKnownNumbers(knownMappedData);
-  tryGuess(candidaturesFromKnownData, wires, 0);
-  tryGuess(candidaturesFromKnownData, wires, 2);
-  tryGuess(candidaturesFromKnownData, wires, 3);
-  tryGuess(candidaturesFromKnownData, wires, 5);
-  tryGuess(candidaturesFromKnownData, wires, 6);
-  tryGuess(candidaturesFromKnownData, wires, 9);
+  const guess = tryGuess(candidaturesFromKnownData, wires, unknownDigitsOrder[0]);
+  if (!guess) return;
+
+  const mappedData = Object.entries(guess).reduce(
+    (acc, [wire, value]) => ({ ...acc, [wire]: value.find(Boolean) }),
+    {}
+  );
+
+  const mappedOutput = output.map((line) => {
+    const mappedLine = line.split("").map((wire) => mappedData[wire]);
+    const segments = mappedLine.sort((a, b) => a - b);
+
+    for (let i = 0; i < numberRepresentation.length; i++) {
+      const knownSegments = numberRepresentation[i];
+      const nonNullSegment = knownSegments.filter(Boolean);
+      if (nonNullSegment.length !== segments.length) continue;
+      for (let i = 0; i < nonNullSegment.length; i++)
+        if (nonNullSegment[i] !== segments[i]) continue;
+
+      return i;
+    }
+
+    return null;
+  });
+
+  return parseInt(mappedOutput.join(""));
 });
+
+console.log("");
