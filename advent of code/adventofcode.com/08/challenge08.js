@@ -54,17 +54,7 @@ const differentDigitCount = {
 
 const unknownDigitsOrder = [2, 3, 5, 6, 9, 0];
 
-const defaultCandidatures = {
-  a: [1, 2, 3, 4, 5, 6, 7],
-  b: [1, 2, 3, 4, 5, 6, 7],
-  c: [1, 2, 3, 4, 5, 6, 7],
-  d: [1, 2, 3, 4, 5, 6, 7],
-  e: [1, 2, 3, 4, 5, 6, 7],
-  f: [1, 2, 3, 4, 5, 6, 7],
-  g: [1, 2, 3, 4, 5, 6, 7],
-};
-
-const mapFromKnownNumbers = (knownValues, candidatures = defaultCandidatures) => {
+const mapFromKnownNumbers = (knownValues, candidatures) => {
   const orderedKnownNumbers = Object.keys(knownValues).sort(
     (a, b) => numberRepresentation[a].length - numberRepresentation[b].length
   );
@@ -139,7 +129,17 @@ const mappedOutputs = lines.map(({ wires, output }) => {
     return acc;
   }, {});
 
-  const candidaturesFromKnownData = mapFromKnownNumbers(knownMappedData);
+  const defaultCandidatures = {
+    a: [1, 2, 3, 4, 5, 6, 7],
+    b: [1, 2, 3, 4, 5, 6, 7],
+    c: [1, 2, 3, 4, 5, 6, 7],
+    d: [1, 2, 3, 4, 5, 6, 7],
+    e: [1, 2, 3, 4, 5, 6, 7],
+    f: [1, 2, 3, 4, 5, 6, 7],
+    g: [1, 2, 3, 4, 5, 6, 7],
+  };
+
+  const candidaturesFromKnownData = mapFromKnownNumbers(knownMappedData, defaultCandidatures);
   const guess = tryGuess(candidaturesFromKnownData, wires, unknownDigitsOrder[0]);
   if (!guess) return;
 
@@ -168,4 +168,4 @@ const mappedOutputs = lines.map(({ wires, output }) => {
   return parseInt(mappedOutput.join(""));
 });
 
-console.log("");
+console.log(mappedOutputs.reduce((acc, value) => acc + value, 0)); // 848796
