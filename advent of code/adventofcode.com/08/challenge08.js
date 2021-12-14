@@ -31,6 +31,9 @@ console.log(counter); // 512
 
 /**
  * Part 2
+ *
+ * This part is executed by a backtracking algorithm that tries all combinations until it finds the correct one.
+ *
  */
 const numberRepresentation = [
   [1, 2, 3, null, 5, 6, 7],
@@ -53,6 +56,57 @@ const differentDigitCount = {
 };
 
 const unknownDigitsOrder = [2, 3, 5, 6, 9, 0];
+
+const representNumberFromCandidature = (candidature, wire) => {
+  const mappedCandidature = Object.entries(candidature).reduce(
+    (acc, [key, value]) => ({ ...acc, [key]: value.find(Boolean) }),
+    {}
+  );
+
+  const mappedWireToSegments = wire
+    .split("")
+    .map((digit) => mappedCandidature[digit])
+    .sort((a, b) => a - b);
+
+  for (let i = 0; i < numberRepresentation.length; i++) {
+    const representation = numberRepresentation[i].filter(Boolean);
+    const isRepresentation = representation.every(
+      (digit, index) => digit === mappedWireToSegments[index]
+    );
+
+    if (isRepresentation) return i;
+  }
+
+  return null;
+};
+
+const checkCandidature = (candidature, wires) => {
+  const mappedCandidature = Object.entries(candidature).reduce(
+    (acc, [key, value]) => ({ ...acc, [key]: value.find(Boolean) }),
+    {}
+  );
+
+  const mappedWiresToSegments = wires.map((wire) =>
+    wire
+      .split("")
+      .map((digit) => mappedCandidature[digit])
+      .sort((a, b) => a - b)
+  );
+
+  for (let representation of numberRepresentation) {
+    const cleanedRepresentation = representation.filter(Boolean);
+    const commonRepresentation = mappedWiresToSegments.find((representation) => {
+      return (
+        representation.length === cleanedRepresentation.length &&
+        representation.every((digit, index) => digit === cleanedRepresentation[index])
+      );
+    });
+
+    if (!commonRepresentation) return false;
+  }
+
+  return true;
+};
 
 const mapFromKnownNumbers = (knownValues, candidatures) => {
   const orderedKnownNumbers = Object.keys(knownValues).sort(
@@ -105,7 +159,10 @@ const tryGuess = (currentCandidatures, wires, number) => {
     });
 
     const testedCandidature = mapFromKnownNumbers({ [number]: combination }, candidature);
-    if (Object.values(testedCandidature).every((array) => array.filter(Boolean).length === 1))
+    if (
+      Object.values(testedCandidature).every((array) => array.filter(Boolean).length === 1) &&
+      checkCandidature(testedCandidature, wires)
+    )
       return testedCandidature;
 
     if (Object.values(testedCandidature).some((array) => array.filter(Boolean).length === 0))
@@ -115,7 +172,11 @@ const tryGuess = (currentCandidatures, wires, number) => {
     if (!unknownDigitsOrder[nextValue]) return null;
 
     const guess = tryGuess(testedCandidature, wires, unknownDigitsOrder[nextValue]);
-    if (Object.values(guess).every((array) => array.filter(Boolean).length === 1)) return guess;
+    if (
+      Object.values(guess).every((array) => array.filter(Boolean).length === 1) &&
+      checkCandidature(guess, wires)
+    )
+      return guess;
   }
 
   return null;
@@ -148,24 +209,8 @@ const mappedOutputs = lines.map(({ wires, output }) => {
     {}
   );
 
-  const mappedOutput = output.map((line) => {
-    const mappedLine = line.split("").map((wire) => mappedData[wire]);
-    const segments = mappedLine.sort((a, b) => a - b);
-
-    for (let i = 0; i < numberRepresentation.length; i++) {
-      const knownSegments = numberRepresentation[i];
-      const nonNullSegment = knownSegments.filter(Boolean);
-      if (nonNullSegment.length !== segments.length) continue;
-      for (let i = 0; i < nonNullSegment.length; i++)
-        if (nonNullSegment[i] !== segments[i]) continue;
-
-      return i;
-    }
-
-    return null;
-  });
-
+  const mappedOutput = output.map((line) => representNumberFromCandidature(guess, line));
   return parseInt(mappedOutput.join(""));
 });
 
-console.log(mappedOutputs.reduce((acc, value) => acc + value, 0)); // 848796
+console.log(mappedOutputs.reduce((acc, value) => acc + value, 0)); // 1091165
