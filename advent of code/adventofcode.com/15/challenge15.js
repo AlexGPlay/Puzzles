@@ -1,6 +1,6 @@
 const fs = require("fs");
 
-const lines = fs
+let lines = fs
   .readFileSync("./advent of code/adventofcode.com/15/input.txt")
   .toString()
   .split("\n")
@@ -10,6 +10,37 @@ const lines = fs
       .split("")
       .map((elem) => parseInt(elem))
   );
+
+// Comment this out for part 1
+lines = (function increaseSize(lines, times) {
+  for (let i = 0; i < lines.length; i++) {
+    let line = [...lines[i]];
+    for (let j = 0; j < times; j++) {
+      const mappedLine = line.map((elem) => {
+        const newValue = elem + j + 1;
+        if (newValue > 9) return newValue - 9;
+        return newValue;
+      });
+      lines[i].push(...mappedLine);
+    }
+  }
+
+  const originalLength = lines.length;
+
+  for (let i = 0; i < times; i++) {
+    for (let j = 0; j < originalLength; j++) {
+      const line = [...lines[j]];
+      const mappedLine = line.map((elem) => {
+        const newValue = elem + i + 1;
+        if (newValue > 9) return newValue - 9;
+        return newValue;
+      });
+      lines.push(mappedLine);
+    }
+  }
+
+  return lines;
+})(lines, 4);
 
 function getAvailableNeighbours(i, j, lines) {
   const neighbours = [];
@@ -30,34 +61,6 @@ const nodes = (function buildNodes(lines) {
     }
   }
   return nodes;
-})(lines);
-
-const adjacencyMatrix = (function buildAdjacencyMatrix(lines) {
-  const adjacencyMatrix = [];
-  for (let i = 0; i < lines.length; i++) {
-    for (let j = 0; j < lines[i].length; j++) {
-      const adjacency = new Array(lines.length * lines[i].length).fill(0);
-      const neighbours = getAvailableNeighbours(i, j, lines);
-      const neighboursPositions = neighbours.map(([i, j]) => nodes.indexOf(`${i};${j}`));
-      neighboursPositions.forEach((position) => (adjacency[position] = 1));
-      adjacencyMatrix.push(adjacency);
-    }
-  }
-  return adjacencyMatrix;
-})(lines);
-
-const weightsMatrix = (function buildWeightsMatrix(lines) {
-  const weightsMatrix = [];
-  for (let i = 0; i < lines.length; i++) {
-    for (let j = 0; j < lines[i].length; j++) {
-      const weights = new Array(lines.length * lines[i].length).fill(0);
-      const neighbours = getAvailableNeighbours(i, j, lines);
-      neighbours.forEach(([i, j]) => (weights[nodes.indexOf(`${i};${j}`)] = lines[i][j]));
-
-      weightsMatrix.push(weights);
-    }
-  }
-  return weightsMatrix;
 })(lines);
 
 function getNode(node) {
@@ -85,43 +88,57 @@ function dijkstra(node) {
   if (currentNode === -1) return null;
 
   const distance = new Array(nodes.length);
-  const step = new Array(nodes.length);
   const visited = new Array(nodes.length).fill(false);
 
+  const availableNeighbours = getAvailableNeighbours(
+    ...node.split(";").map((elem) => parseInt(elem)),
+    lines
+  );
+
   for (let i = 0; i < nodes.length; i++) {
-    if (!adjacencyMatrix[currentNode][i]) {
+    const isAdjacent = availableNeighbours.some((node) => nodes[i] === `${node[0]};${node[1]}`);
+
+    if (!isAdjacent) {
       distance[i] = Number.POSITIVE_INFINITY;
-      step[i] = -1;
     } else {
-      distance[i] = weightsMatrix[currentNode][i];
-      step[i] = currentNode;
+      const [nI, nJ] = nodes[i].split(";").map((elem) => parseInt(elem));
+      const weight = lines[nI][nJ];
+      distance[i] = weight;
     }
   }
 
   visited[currentNode] = true;
   distance[currentNode] = 0;
-  step[currentNode] = currentNode;
 
   let nextNode = minimumCost(distance, visited);
 
   while (nextNode !== -1) {
     visited[nextNode] = true;
 
-    for (let i = 0; i < nodes.length; i++) {
-      if (adjacencyMatrix[nextNode][i]) {
-        const appliedWeight = distance[nextNode] + weightsMatrix[nextNode][i];
-        if (appliedWeight >= distance[i]) continue;
-        distance[i] = appliedWeight;
-        step[i] = nextNode;
-      }
+    const availableNeighbours = getAvailableNeighbours(
+      ...nodes[nextNode].split(";").map((elem) => parseInt(elem)),
+      lines
+    );
+
+    for (let availabeNeighbour of availableNeighbours) {
+      const [nI, nJ] = availabeNeighbour;
+      const weight = lines[nI][nJ];
+
+      const appliedWeight = distance[nextNode] + weight;
+      const nodeIdx = getNode(`${nI};${nJ}`);
+
+      if (appliedWeight >= distance[nodeIdx]) continue;
+      distance[nodeIdx] = appliedWeight;
     }
 
     nextNode = minimumCost(distance, visited);
   }
 
-  return [distance, step];
+  return distance;
 }
 
-const [distance] = dijkstra(`0;0`);
+const distance = dijkstra(`0;0`);
 
-console.log(distance[distance.length - 1]); // 609
+// Part 1 => 609
+// Part 2 => 2925
+console.log(distance[distance.length - 1]);
