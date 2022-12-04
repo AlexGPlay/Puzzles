@@ -17,5 +17,6 @@ puts(
   file_data.count do |entry|
     range1, range2 = entry.split(',').map{|r| (r.split('-')[0].to_i..r.split('-')[1].to_i)}
     overlaps?(range1, range2) || overlaps?(range2, range1)
+    # Without overlaps? method => (range1.to_a & range2.to_a).any?
   end
 )
