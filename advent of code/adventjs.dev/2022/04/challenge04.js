@@ -3,7 +3,7 @@ function fitsInOneBox(boxes) {
 
   for (let i = 0; i < boxes.length - 1; i++) {
     const [box1, box2] = [boxes[i], boxes[i + 1]];
-    if (box1.l >= box2.l || box1.w >= box2.w || box1.h >= box2.h) return false;
+    for (const key of Object.keys(box1)) if (box1[key] >= box2[key]) return false;
   }
 
   return true;
