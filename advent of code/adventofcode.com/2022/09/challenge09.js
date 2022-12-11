@@ -12,9 +12,8 @@ const MOVEMENT_TRANSLATION = {
   D: [1, 0],
 };
 
-const distance = (hCoords, tCoords) => {
-  return Math.sqrt(Math.pow(tCoords[0] - hCoords[0], 2) + Math.pow(tCoords[1] - hCoords[1], 2));
-};
+const distance = (hCoords, tCoords) =>
+  Math.sqrt(Math.pow(tCoords[0] - hCoords[0], 2) + Math.pow(tCoords[1] - hCoords[1], 2));
 
 const calculateKnotMovement = (hCoords, tCoords) => {
   if (distance(hCoords, tCoords) < 2) return;
@@ -24,37 +23,23 @@ const calculateKnotMovement = (hCoords, tCoords) => {
     tCoords[0] += (hCoords[0] - tCoords[0]) / Math.abs(hCoords[0] - tCoords[0]);
 };
 
-const calculateMovements = (movement, hCoords, tCoords, visitedArray) => {
+const calculateMovements = (movement, coords, visitedArray) => {
   const [dir, quantity] = movement.split(" ");
   const translatedDir = MOVEMENT_TRANSLATION[dir];
 
   for (let i = 0; i < parseInt(quantity); i++) {
-    hCoords[0] += translatedDir[0];
-    hCoords[1] += translatedDir[1];
-
-    let head = hCoords;
-    for (let i = 0; i < tCoords.length; i++) {
-      calculateKnotMovement(head, tCoords[i]);
-      head = tCoords[i];
-    }
-    visitedArray?.push(tCoords.at(-1).join(","));
+    coords[0] = [coords[0][0] + translatedDir[0], coords[0][1] + translatedDir[1]];
+    for (let i = 1; i < coords.length; i++) calculateKnotMovement(coords[i - 1], coords[i]);
+    visitedArray?.push(coords.at(-1).join(","));
   }
 };
 
-// Part 1
-const tCoords = [[0, 0]];
-const hCoords = [0, 0];
+function playMovements(lines, size) {
+  const visitedCoords = ["0,0"];
+  const coords = [[0, 0], ...new Array(size).fill(null).map(() => [0, 0])];
+  for (let line of lines) calculateMovements(line, coords, visitedCoords);
+  return [...new Set(visitedCoords)].length;
+}
 
-const visitedCoords = ["0,0"];
-
-for (let line of lines) calculateMovements(line, hCoords, tCoords, visitedCoords);
-console.log([...new Set(visitedCoords)].length);
-
-// Part 2
-
-const visitedCoords2 = ["0,0"];
-const tCoords2 = new Array(9).fill(null).map(() => [0, 0]);
-const hCoords2 = [0, 0];
-
-for (let line of lines) calculateMovements(line, hCoords2, tCoords2, visitedCoords2);
-console.log([...new Set(visitedCoords2)].length);
+console.log(playMovements(lines, 1)); // Part 1
+console.log(playMovements(lines, 9)); // Part 2
