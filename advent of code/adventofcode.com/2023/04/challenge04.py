@@ -8,7 +8,6 @@ with open("input.txt") as file:
     for line in lines:
         _, data = line.split(":")
         card_numbers_part, winning_numbers_part = data.split("|")
-        # card_numbers = [int(x) for x in card_numbers_part.split()]
         winning_numbers = [int(x) for x in re.findall(r"\d+", winning_numbers_part)]
 
         cards_and_solutions.append((card_numbers_part, winning_numbers))
