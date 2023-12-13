@@ -1,8 +1,11 @@
 import networkx as nx
+from shapely.geometry import Polygon, Point
+from shapely.strtree import STRtree
 
 # Parse input
 start_node = None
 nodes = []
+all_matrix_points = []
 graph = nx.Graph()
 
 NORTH_PIPES = {"direction": [-1, 0], "pipes": ["|", "7", "F"]}
@@ -25,6 +28,7 @@ with open("input.txt") as file:
     for i in range(len(lines)):
         for j in range(len(lines[i])):
             char = lines[i][j]
+            all_matrix_points.append(Point(i, j))
             if char not in CONNECTIONS:
                 continue
 
@@ -49,20 +53,34 @@ with open("input.txt") as file:
                 start_node = (i, j)
 
             if len(connections_to_add) == 2:
-                nodes.append((i, j))
                 for connection in connections_to_add:
                     graph.add_edge((i, j), connection)
 
 
-# Part 1
+# Part 1 (Adds info for part 2)
 biggest_distance = 0
+biggest_distance_node = None
 i = 0
 
 for path in nx.single_target_shortest_path_length(graph, start_node):
     length = path[1]
     if length > biggest_distance:
         biggest_distance = length
+        biggest_distance_node = path[0]
 
 print(biggest_distance)
 
 # Part 2
+side_one = list(nx.all_simple_paths(graph, start_node, biggest_distance_node))[0]
+side_two = list(nx.all_simple_paths(graph, biggest_distance_node, start_node))[0]
+main_loop_polygon = Polygon(side_one + side_two)
+
+spatial_index = STRtree([main_loop_polygon])
+
+contained_points = [
+    point
+    for point in all_matrix_points
+    if any(main_loop_polygon.contains(point) for _ in spatial_index.query(point))
+]
+
+print(len(contained_points))
