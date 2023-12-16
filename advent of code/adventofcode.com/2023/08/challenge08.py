@@ -1,4 +1,5 @@
 import re
+import math
 
 movement_pattern = []
 nodes = {}
@@ -30,10 +31,10 @@ while current_node != "ZZZ":
 print(steps)
 
 # Problem 2
+
 all_nodes_are_finished_in_z = False
 all_nodes_are_cycles = False
 current_movement_index = 0
-steps = 0
 working_nodes = [
     {"current_node": node, "path": [], "is_cycle": False}
     for node in nodes.keys()
@@ -53,9 +54,16 @@ while not all_nodes_are_finished_in_z and not all_nodes_are_cycles:
         next_node = nodes[working_nodes[i]["current_node"]][current_movement]
         working_nodes[i]["current_node"] = next_node
 
-        if (next_node, current_movement) not in working_nodes[i]["path"]:
-            working_nodes[i]["path"].append((next_node, current_movement))
+        next_100_movements = [
+            current_movement,
+            *movement_pattern[current_movement_index : current_movement_index + 100],
+        ]
+        if (next_node, next_100_movements) not in working_nodes[i]["path"]:
+            working_nodes[i]["path"].append((next_node, next_100_movements))
         else:
+            working_nodes[i]["cycle_starts_at"] = working_nodes[i]["path"].index(
+                (next_node, next_100_movements)
+            )
             working_nodes[i]["is_cycle"] = True
 
     all_nodes_are_finished_in_z = all(
@@ -63,6 +71,8 @@ while not all_nodes_are_finished_in_z and not all_nodes_are_cycles:
     )
     all_nodes_are_cycles = all([node["is_cycle"] for node in working_nodes])
 
-    steps += 1
 
-print(steps)
+result = math.lcm(
+    *[len(node["path"]) - node["cycle_starts_at"] for node in working_nodes]
+)
+print(result)
