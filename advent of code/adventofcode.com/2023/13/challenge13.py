@@ -9,70 +9,53 @@ with open("input.txt") as file:
 
 
 # Util
-def vertical_split(pattern):
-    best_reflect = None
-    current_best_difference = 99999999
+def vertical_split(pattern, valid_differences):
+    rotated_pattern = []
+    for i in range(0, len(pattern[0])):
+        rotated_pattern.append("".join([pattern[j][i] for j in range(0, len(pattern))]))
 
-    for i in range(1, len(pattern[0])):
-        first_half = [row[:i] for row in pattern]
-        second_half = [row[i:] for row in pattern]
-
-        if len(first_half) == 0 or len(second_half) == 0:
-            continue
-
-        # Check that they are mirroring, take into account that they don't need to be the same length
-        for i in range(0, min(len(first_half[0]), len(second_half[0]))):
-            rotated_first_half = [row[-1 - i] for row in first_half]
-            rotated_second_half = [row[i] for row in second_half]
-
-            if rotated_first_half != rotated_second_half:
-                break
-        else:
-            len_diff = abs(len(first_half[0]) - len(second_half[0]))
-            if len_diff < current_best_difference:
-                current_best_difference = len_diff
-                best_reflect = len(first_half[0])
-
-    return best_reflect, current_best_difference
+    return horizontal_split(rotated_pattern, valid_differences)
 
 
-def horizontal_split(pattern):
-    best_reflect = None
-    current_best_difference = 99999999
-
+def horizontal_split(pattern, valid_differences):
     for i in range(1, len(pattern)):
-        first_half = pattern[:i]
+        first_half = list(reversed(pattern[:i]))
         second_half = pattern[i:]
+
         if len(first_half) == 0 or len(second_half) == 0:
             continue
 
-        # Check that they are mirroring, take into account that they don't need to be the same length
-        for i in range(0, min(len(first_half), len(second_half))):
-            if first_half[-1 - i] != second_half[i]:
-                break
-        else:
-            len_diff = abs(len(first_half) - len(second_half))
-            if len_diff < current_best_difference:
-                current_best_difference = len_diff
-                best_reflect = len(first_half)
+        differences = 0
+        for k in range(0, min(len(first_half), len(second_half))):
+            fh = first_half[k]
+            sh = second_half[k]
+            for w in range(0, len(fh)):
+                if fh[w] != sh[w]:
+                    differences += 1
 
-    return best_reflect, current_best_difference
+        if differences == valid_differences:
+            return i
 
-
-def get_pattern_value(pattern):
-    vertical_score, biggest_vertical_reflect = vertical_split(pattern)
-    horizontal_score, biggest_horizontal_reflect = horizontal_split(pattern)
-
-    if biggest_vertical_reflect < biggest_horizontal_reflect:
-        return vertical_score
-    else:
-        return horizontal_score * 100
-
-    raise "No match found"
+    return 0
 
 
-# Part 1
+def get_pattern_value(pattern, valid_differences):
+    vertical_score = vertical_split(pattern, valid_differences)
+    horizontal_score = horizontal_split(pattern, valid_differences)
+    return vertical_score + (horizontal_score * 100)
+
+
+# Part 1 & prepare data for part 2
 results = []
 for pattern in patterns:
-    results.append(get_pattern_value(pattern))
+    value = get_pattern_value(pattern, 0)
+    results.append(value)
 print(sum(results))
+
+
+# Part 2
+part_2_results = []
+for pattern in patterns:
+    value = get_pattern_value(pattern, 1)
+    part_2_results.append(value)
+print(sum(part_2_results))
