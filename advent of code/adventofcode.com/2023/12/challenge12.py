@@ -1,9 +1,10 @@
+from functools import cache
 import re
 
 # Parse input
 springs = []
 
-with open("example.txt") as file:
+with open("input.txt") as file:
     for line in file.readlines():
         spring_conditions, codification = line.strip().split(" ")
         springs.append(
@@ -13,44 +14,93 @@ with open("example.txt") as file:
             }
         )
 
+
 # Util
-subs = ["#", "."]
-
-
+@cache
 def backtrack_fill(springs, codification):
-    is_all_filled = "?" not in springs
-    if is_all_filled:
-        groups = re.findall(r"#+", springs)
-        are_same_length = len(groups) == len(codification)
-        if not are_same_length:
-            return []
-        for group, cod in zip(groups, codification):
-            if len(group) != cod:
-                return []
-        return [springs]
+    if len(codification) == 0:
+        if "#" not in springs:
+            return 1
+        return 0
 
-    filled_area = springs[: springs.index("?")]
-    groups = re.findall(r"#+", filled_area)
-    comparable_codifications = codification[: len(groups)]
-    for group, cod in zip(groups, comparable_codifications):
-        if len(group) > cod:
-            return []
+    if len(springs) < sum(codification):
+        return 0
 
-    first_question_mark = springs.index("?")
-    valid_subs = []
-    for sub in subs:
-        list_spring = list(springs)
-        list_spring[first_question_mark] = sub
-        backtracked_valid_subs = backtrack_fill("".join(list_spring), codification)
-        valid_subs.extend(backtracked_valid_subs)
+    if springs == "":
+        return 0
 
+    if springs[0] == ".":
+        return backtrack_fill(springs[1:], codification)
+    if springs[0] == "#":
+        full_group = re.findall(r"#+", springs)[0]
+        current_constrain = codification[0]
+        substr = springs[0:current_constrain]
+
+        if full_group != substr:
+            if "?" in substr and "." not in substr:
+                if (
+                    current_constrain < len(springs)
+                    and springs[current_constrain] == "?"
+                ):
+                    return backtrack_fill(
+                        springs[current_constrain + 1 :], codification[1:]
+                    )
+                if (
+                    current_constrain < len(springs)
+                    and springs[current_constrain] == "#"
+                ):
+                    return 0
+                return backtrack_fill(springs[current_constrain:], codification[1:])
+            return 0
+        if full_group == substr and len(substr) != current_constrain:
+            return 0
+        if full_group == substr and len(substr) == current_constrain:
+            if current_constrain == len(springs):
+                return backtrack_fill("", codification[1:])
+            if springs[current_constrain] == ".":
+                return backtrack_fill(
+                    springs[current_constrain + 1 :], codification[1:]
+                )
+            elif springs[current_constrain] == "?":
+                return backtrack_fill(
+                    springs[current_constrain + 1 :], codification[1:]
+                )
+        raise "Error"
+
+    valid_subs = backtrack_fill(
+        "#" + springs[1:],
+        codification,
+    ) + backtrack_fill(
+        springs[1:],
+        codification,
+    )
     return valid_subs
 
 
 # Part 1
-sum = 0
+total = 0
 for spring in springs:
-    valid_springs = backtrack_fill(spring["spring_conditions"], spring["codification"])
-    sum += len(valid_springs)
+    valid_springs = backtrack_fill(
+        spring["spring_conditions"], tuple(spring["codification"])
+    )
+    total += valid_springs
 
-print(sum)
+print(total)
+
+# Part 2
+total = 0
+for spring in springs:
+    condition = "?".join(
+        [
+            spring["spring_conditions"],
+            spring["spring_conditions"],
+            spring["spring_conditions"],
+            spring["spring_conditions"],
+            spring["spring_conditions"],
+        ]
+    )
+
+    valid_springs = backtrack_fill(condition, tuple(spring["codification"] * 5))
+    total += valid_springs
+
+print(total)
