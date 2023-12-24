@@ -1,4 +1,5 @@
 import numpy as np
+import sympy
 
 # Parse input
 hailstones = []
@@ -11,7 +12,7 @@ with open("input.txt") as file:
         hailstones.append({"position": [x, y, z], "velocity": [vx, vy, vz]})
 
 
-# Util
+# Part 1
 def line_equation(a, b, t):
     return a + t * b
 
@@ -67,6 +68,26 @@ def find_intersections_in_area(lines, max_area, min_area):
     return valid_intersections
 
 
-# Part 1
 intersections = find_intersections_in_area(hailstones, 400000000000000, 200000000000000)
 print(len(intersections))
+
+
+# Part 2
+def find_common_intersection_line(lines):
+    rock_x, rock_y, rock_z, rock_vx, rock_vy, rock_vz = sympy.symbols(
+        "rock_x rock_y rock_z rock_vx rock_vy rock_vz"
+    )
+
+    equations = []
+    for line in lines:
+        x, y, z = line["position"]
+        vx, vy, vz = line["velocity"]
+        equations.append((rock_x - x) * (vy - rock_vy) - (rock_y - y) * (vx - rock_vx))
+        equations.append((rock_y - y) * (vz - rock_vz) - (rock_z - z) * (vy - rock_vy))
+
+    answer = sympy.solve(equations)[0]
+    return answer[rock_x] + answer[rock_y] + answer[rock_z]
+
+
+new_line_sum = find_common_intersection_line(hailstones)
+print(new_line_sum)
