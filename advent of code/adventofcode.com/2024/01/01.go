@@ -35,8 +35,8 @@ func part1() {
 		column2 = append(column2, value2)
 	}
 
-	sort.IntSlice(column1).Sort()
-	sort.IntSlice(column2).Sort()
+	sort.Ints(column1)
+	sort.Ints(column2)
 
 	total := 0
 	for i, value1 := range column1 {
@@ -65,11 +65,7 @@ func part2(){
 		fmt.Sscanf(line, "%d %d", &value1, &value2)
 		column1 = append(column1, value1)
 
-		if _, ok := columnRepetitions[value2]; ok {
-			columnRepetitions[value2]++
-		} else {
-			columnRepetitions[value2] = 1
-		}
+		columnRepetitions[value2]++
 	}
 
 	total := 0
