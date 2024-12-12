@@ -12,7 +12,7 @@ import (
 
 // Utils
 func readFile() [][]string {
-	file, err := os.Open("example.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -124,48 +124,96 @@ func part1(){
 }
 
 // Part 2
-type VertexWithConnections struct {
+type PotentialVertex struct {
 	position []int
-	connections [][]int
+	canOverlap [][]int
 }
 
-func calculateVertices(section [][]int) []VertexWithConnections {
-	var vertices []VertexWithConnections
+func isInSection(section [][]int, position []int) bool {
+	for _, sectionPosition := range section {
+		if sectionPosition[0] == position[0] && sectionPosition[1] == position[1] {
+			return true
+		}
+	}
 
-	for i := 0; i < len(section); i++ {
-		position := section[i]
-		var connections [][]int
+	return false
+}
 
-		for j := 0; j < len(section); j++ {
-			if i == j {
+func getSectionRanges(section [][]int) (int, int, int, int) {
+	var minX, minY, maxX, maxY int
+
+	for _, position := range section {
+		if position[0] < minX {
+			minX = position[0]
+		}
+		if position[0] > maxX {
+			maxX = position[0]
+		}
+		if position[1] < minY {
+			minY = position[1]
+		}
+		if position[1] > maxY {
+			maxY = position[1]
+		}
+	}
+
+	return minX - 1, minY - 1, maxX + 1, maxY + 1
+}
+
+func calculateVertices(section [][]int) int {
+	vertices := 0
+
+	minX, minY, maxX, maxY := getSectionRanges(section)
+
+	for i := minX; i <= maxX; i++ {
+		for j := minY; j <= maxY; j++ {
+			position := []int{i, j}
+
+			if isInSection(section, position) {
 				continue
 			}
 
-			diff := math.Abs(float64(position[0] - section[j][0])) + math.Abs(float64(position[1] - section[j][1]))
-			if diff == 1 {
-				connections = append(connections, section[j])
+			potentialVertices := []PotentialVertex {
+				{position: []int{position[0] + 1, position[1] + 1}, canOverlap: [][]int{{position[0] + 1, position[1]}, {position[0], position[1] + 1}}},
+				{position: []int{position[0] + 1, position[1] - 1}, canOverlap: [][]int{{position[0] + 1, position[1]}, {position[0], position[1] - 1}}},
+				{position: []int{position[0] - 1, position[1] + 1}, canOverlap: [][]int{{position[0] - 1, position[1]}, {position[0], position[1] + 1}}},
+				{position: []int{position[0] - 1, position[1] - 1}, canOverlap: [][]int{{position[0] - 1, position[1]}, {position[0], position[1] - 1}}},
 			}
-		}
-		if len(connections) <= 2 {
-			vertices = append(vertices, VertexWithConnections{position, connections})
+
+			for _, potentialVertex := range potentialVertices {
+				count := 0
+				for _, overlap := range potentialVertex.canOverlap {
+					if isInSection(section, overlap) {
+						count += 1
+					}
+				}
+
+				if count == 2 {
+					vertices += 1
+				}
+
+				if count == 0 {
+					if isInSection(section, potentialVertex.position) {
+						vertices += 1
+					}
+				}
+			}
+
 		}
 	}
 
 	return vertices
 }
 
-func calculateSidesFromPerimeterPoints(perimeterPoints [][]int) int {
-	sides := 0
-
-
-
-	return sides
-}
-
 func part2(){
 	data := readFile()
 	sections := buildSections(data)
-	fmt.Println(calculateVertices(sections[0]))
+
+	total := 0
+	for _, section := range sections {
+		total += calculateVertices(section) * len(section)
+	}
+	fmt.Println(total)
 }
 
 func main(){
