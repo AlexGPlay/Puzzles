@@ -12,7 +12,7 @@ import (
 
 // Utils
 func readFile() ([]int, []int) {
-	file, err := os.Open("example7.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -182,11 +182,34 @@ func findOutput(registers []int, instructions []int, expectedOutput int, expecte
 	}
 }
 
-func part2(){
-	instructions, registers := readFile()
-	toFind := reverseArray(instructions)
+// Part 2
+func findSolution(instructions []int, answer int) int{
+	if len(instructions) == 0 {
+		return answer
+	}
 
-	i := findOutput(registers, instructions, toFind[0], strconv.Itoa(toFind[0]))
+	// Hardcoded operations from my input
+	for i := 0; i<8; i++ {
+		a := (answer << 3) + i
+		b := a % 8
+		b = b ^ 7
+		c := a / int(math.Pow(2, float64(b)))
+		b = b ^ 7
+		b = b ^ c
+		if b % 8 == instructions[len(instructions)-1] {
+			solution := findSolution(instructions[:len(instructions)-1], a)
+			if solution != -1 {
+				return solution
+			}
+		}
+	}
+
+	return -1
+}
+
+func part2(){
+	instructions, _ := readFile()
+	i := findSolution(instructions, 0)
 
 	fmt.Println(i)
 }
