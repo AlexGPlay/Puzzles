@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
 func readFile() [][]string {
-	file, err := os.Open("example1.txt")
+	file, err := os.Open("input.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -27,18 +25,6 @@ func readFile() [][]string {
 
 func encodePosition(i int, j int) string {
 	return fmt.Sprintf("%d,%d", i, j)
-}
-
-func decodePosition(position string) []int {
-	numbersAsString := regexp.MustCompile(`\d+`).FindAllString(position, -1)
-	var numbers []int
-	for _, numberAsString := range numbersAsString {
-		number, _ := strconv.Atoi(numberAsString)
-		numbers = append(numbers, number)
-	}
-
-
-	return []int{numbers[0], numbers[1]}
 }
 
 func cloneVisited(visited map[string]bool) map[string]bool {
@@ -68,11 +54,11 @@ func findDirectionMovement(from []int, to []int) string {
 type QueueElement struct {
 	position []int
 	weight int
-	from string
+	visited map[string]bool
 	direction string
 }
 
-func findNeighbours(lines [][]string, weight int, position []int, direction string) []QueueElement {
+func findNeighbours(lines [][]string, weight int, position []int, visited map[string] bool, direction string) []QueueElement {
 	var neighbours []QueueElement
 
 	potentialMovements := [][]int{{-1, 0}, {1, 0}, {0, -1}, {0, 1}}
@@ -96,9 +82,8 @@ func findNeighbours(lines [][]string, weight int, position []int, direction stri
 			movementCost += 1000
 		}
 
-		neighbours = append(neighbours, QueueElement{newPosition, movementCost, encodePosition(position[0], position[1]) + direction, newDirection})
+		neighbours = append(neighbours, QueueElement{newPosition, movementCost, visited, newDirection})
 	}
-
 
 	return neighbours
 }
@@ -114,55 +99,49 @@ func sortQueue(queue []QueueElement) []QueueElement {
 	return queue
 }
 
-func dijkstra(lines [][]string, from []int, to []int) (int, map[string][]string) {
-	queue := []QueueElement{{from, 0, "" , "horizontal"}}
-	visited := make(map[string]bool)
+func dijkstra(lines [][]string, from []int, to []int) (int, int) {
+	minCost := math.MaxInt
 	weights := make(map[string]int)
-	path := make(map[string][]string)
+	minPaths := make(map[string]bool)
+	queue := []QueueElement{{from, 0, make(map[string]bool), "horizontal"}}
 
 	for len(queue) > 0 {
 		element := queue[0]
 		queue = queue[1:]
 
-		key := encodePosition(element.position[0], element.position[1]) + element.direction
-
-		if _, ok := weights[key]; ok {
-			if weights[key] < element.weight {
-				continue
-			} else {
-				path[key] = append(path[key], element.from)
-				weights[key] = element.weight
-			}
-		} else {
-			path[key] = append(path[key], element.from)
-			weights[key] = element.weight
-		}
-
-		if visited[key] {
+		if element.weight > minCost {
 			continue
 		}
 
-		visited[key] = true
-
-		neighbours := findNeighbours(lines, weights[key], element.position, element.direction)
-		for _, neighbour := range neighbours {
-			queue = append(queue, neighbour)
+		elementWeightKey := encodePosition(element.position[0], element.position[1]) + element.direction
+		if _, ok := weights[elementWeightKey]; ok && weights[elementWeightKey] < element.weight {
+			continue
 		}
-		queue = sortQueue(queue)
+		weights[elementWeightKey] = element.weight
+
+		for _, neighbour := range findNeighbours(lines, element.weight, element.position, element.visited, element.direction) {
+			isEnd := neighbour.position[0] == to[0] && neighbour.position[1] == to[1]
+			if isEnd {
+				if element.weight < minCost {
+					minCost = element.weight
+					minPaths = cloneVisited(element.visited)
+				} else if element.weight == minCost {
+					for key, value := range element.visited {
+						minPaths[key] = value
+					}
+				}
+			} else {
+				cloneVisited := cloneVisited(element.visited)
+				cloneVisited[encodePosition(neighbour.position[0], neighbour.position[1])] = true
+				if element.weight < minCost {
+					queue = append(queue, QueueElement{neighbour.position, neighbour.weight, cloneVisited, neighbour.direction})
+				}
+			}
+		}
+
 	}
 
-	baseKey := encodePosition(to[0], to[1])
-	horizontalValue, okHorizontal := weights[baseKey + "horizontal"]
-	if !okHorizontal {
-		horizontalValue = 1000000
-	}
-
-	verticalValue, okVertical := weights[baseKey + "vertical"]
-	if !okVertical {
-		verticalValue = 1000000
-	}
-
-	return int(math.Min(float64(horizontalValue), float64(verticalValue))), path
+	return minCost, len(minPaths) + 2
 }
 
 func findElement(lines [][]string, element string) []int {
@@ -176,46 +155,12 @@ func findElement(lines [][]string, element string) []int {
 	return []int{}
 }
 
-func part1(){
-	lines := readFile()
-	from := findElement(lines, "S")
-	to := findElement(lines, "E")
-	weight, _ := dijkstra(lines, from, to)
-	fmt.Println(weight)
-}
-
-func printPath(path map[string][]string, from string, to string) {
-	queue := []string{to}
-	uniquePositions := make(map[string]bool)
-
-	for len(queue) > 0 {
-		element := queue[0]
-		queue = queue[1:]
-
-		elementCoords := decodePosition(element)
-		uniquePositions[encodePosition(elementCoords[0], elementCoords[1])] = true
-
-		if element == from {
-			break
-		}
-
-		for _, parent := range path[element] {
-			queue = append(queue, parent)
-		}
-	}
-
-	fmt.Println(uniquePositions)
-}
-
-func part2() {
-	lines := readFile()
-	from := findElement(lines, "S")
-	to := findElement(lines, "E")
-	_, path := dijkstra(lines, from, to)
-	printPath(path, encodePosition(from[0], from[1]) + "horizontal", encodePosition(to[0], to[1]) + "horizontal")
-}
-
 func main(){
-	part1()
-	part2()
+	lines := readFile()
+	from := findElement(lines, "S")
+	to := findElement(lines, "E")
+	// This takes forever because of part 2 and at this point i'm too tired to optimize it
+	minCost, paths := dijkstra(lines, from, to)
+	fmt.Println(minCost)
+	fmt.Println(paths)
 }
